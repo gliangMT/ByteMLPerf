@@ -5,4 +5,16 @@
 #     "chatglm" : ChatGLMForConditionalGeneration,
 #     "chatglm2" : ChatGLM2ForConditionalGeneration
 # }
-__all__ = {}
+
+from typing import Dict, Tuple, Any
+
+import torch
+import torch.nn as nn
+
+from .gpu_chatglm2 import GPUChatGLM2
+
+from llm_perf.utils.logger import logger
+
+__all__ = {
+    "chatglm2": GPUChatGLM2
+}
