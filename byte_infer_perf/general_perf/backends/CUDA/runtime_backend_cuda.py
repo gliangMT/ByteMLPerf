@@ -8,7 +8,9 @@ import numpy as np
 from general_perf.backends import runtime_backend
 
 log = logging.getLogger("BackendCUDA")
+
 torch.backends.cudnn.allow_tf32 = True
+
 
 pt_dtype_map = {
     "FLOAT32": torch.float32,
@@ -122,6 +124,8 @@ class RuntimeBackendCUDA(runtime_backend.RuntimeBackend):
             model = torch.jit.load(
                 segment['compiled_model'][0]['compiled_obj'],
                 torch.device('cuda'))
+
+
             if os.getenv("NCHW"):
                 model = model.to(memory_format=torch.channels_last)
             if os.getenv("FP16"):
