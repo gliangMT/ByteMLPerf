@@ -14,7 +14,7 @@ mkdir -p general_perf/download
 if [ $1 == "bert-tf-fp32" -o $1 == "bert-torch-fp32" ]; then
     wget -O general_perf/download/open_bert.tar https://lf-bytemlperf.17mh.cn/obj/bytemlperf-zoo/open_bert.tar
     tar xf general_perf/download/open_bert.tar -C general_perf/model_zoo/regular/
-elif [ $1 == "resnet50-tf-fp32" -o $1 == "resnet50-torch-fp32" ]; then
+elif [ $1 == "resnet50-tf-fp32" -o $1 == "resnet50-torch-fp32" -o $1 == "resnet50-torch-fp16" ]; then
     wget -O general_perf/download/resnet50.tar https://lf-bytemlperf.17mh.cn/obj/bytemlperf-zoo/resnet50.tar
     tar xf general_perf/download/resnet50.tar -C general_perf/model_zoo/regular/
 elif [ $1 == "widedeep-tf-fp32" ]; then
