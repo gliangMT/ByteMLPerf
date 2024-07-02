@@ -8,10 +8,9 @@ import numpy as np
 from general_perf.backends import runtime_backend
 
 log = logging.getLogger("BackendCUDA")
-# <<<<<<< musa_dev_fp16
+
 torch.backends.cudnn.allow_tf32 = True
-# =======
-# >>>>>>> musa_dev
+
 
 pt_dtype_map = {
     "FLOAT32": torch.float32,
@@ -22,10 +21,7 @@ pt_dtype_map = {
 
 INPUT_TYPE = {
     "UINT8": np.uint8,
-# <<<<<<< musa_dev_fp16
     "FLOAT16": np.float16,
-# =======
-# >>>>>>> musa_dev
     "FLOAT32": np.float32,
     "LONG": np.long,
     "INT32": np.int32,
@@ -128,7 +124,8 @@ class RuntimeBackendCUDA(runtime_backend.RuntimeBackend):
             model = torch.jit.load(
                 segment['compiled_model'][0]['compiled_obj'],
                 torch.device('cuda'))
-# <<<<<<< musa_dev_fp16
+
+
             if os.getenv("NCHW"):
                 model = model.to(memory_format=torch.channels_last)
             if os.getenv("FP16"):
@@ -136,9 +133,6 @@ class RuntimeBackendCUDA(runtime_backend.RuntimeBackend):
             model.eval()
             print(f"INFO:[Data type]: {next(iter(model.parameters())).dtype}")
 
-# =======
-#             model.eval()
-# >>>>>>> musa_dev
             self.model_runtimes.append(model)
 
     def _get_fake_samples(self, batch_size, shape, input_type):
