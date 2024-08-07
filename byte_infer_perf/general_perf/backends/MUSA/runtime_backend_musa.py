@@ -8,6 +8,7 @@ import numpy as np
 
 from general_perf.backends import runtime_backend
 
+os.environ["NCHW"] = "1"
 torch.backends.mudnn.allow_tf32 = True
 log = logging.getLogger("BackendMUSA")
 
@@ -45,8 +46,8 @@ class RuntimeBackendMUSA(runtime_backend.RuntimeBackend):
         for key, _ in feeds.items():
             input_tensors.append(
                 torch.tensor(feeds[key],
-                                dtype=pt_dtype_map[self.input_type[i]]).to(
-                                    self.device))
+                             dtype=pt_dtype_map[self.input_type[i]]).to(
+                    self.device))
             i += 1
         with torch.no_grad():
             for model_runtime in self.model_runtimes:
