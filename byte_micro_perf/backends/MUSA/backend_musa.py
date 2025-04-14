@@ -78,9 +78,10 @@ OP_MAPPING = {
     "host2device": Host2DeviceOp,
     "device2host": Device2HostOp,
     "device2device": Device2DeviceOp,
-    # TODO(@gliangMT): add custom ops
     # gemm ops
     "gemm": GPUGemmOp,
+    # TODO(@gliangMT): add custom ops
+    # The following operators have no workload
     "gemm_fp8": GPUGemmFP8Op,
     "group_gemm_fp8": GPUGroupGemmFP8Op,
     # attn ops
