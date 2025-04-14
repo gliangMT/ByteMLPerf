@@ -68,12 +68,12 @@ OP_MAPPING = {
     "scatter": ScatterOp,
     "index_add": IndexAddOp,
     # xccl ops
-    # "all_gather": AllGatherOp,
-    # "all_reduce": AllReduceOp,
-    # "all_to_all": AlltoAllOp,
+    "all_gather": AllGatherOp,
+    "all_reduce": AllReduceOp,
+    "all_to_all": AlltoAllOp,
     # "broadcast": BroadcastOp,
-    # "reduce_scatter": ReduceScatterOp,
-    # "p2p": P2POp,
+    "reduce_scatter": ReduceScatterOp,
+    "p2p": P2POp,
     # h2d ops
     "host2device": Host2DeviceOp,
     "device2host": Device2HostOp,
@@ -121,6 +121,15 @@ class BackendMUSA(Backend):
         return device_count, list(range(device_count))
 
     def set_device(self, device_index: int):
+        # some ops need to specify environment variables
+        os.environ["MUSA_MEMCPY_PATH"] = "3"
+        os.environ["MCCL_PROTOS"] = "2"
+        # os.environ["MCCL_ALGOS"]=1         # default
+        # export MUSA_BLOCK_SCHEDULE_MODE=1  # default
+        os.environ["MCCL_BUFFSIZE"] = "20971520"
+        os.environ["MCCL_IB_GID_INDEX"] = "3"
+        os.environ["MCCL_NET_SHARED_BUFFERS"] = "0"  # (multi_node alltoall)
+
         torch.musa.set_device(device_index)
 
     def get_device(self):
