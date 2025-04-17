@@ -51,98 +51,98 @@ class GPUGemmOp(GemmOp):
 FP8_E4M3_MAX = 448.0  # Maximum representable value in FP8 E4M3 format
 
 
-def per_token_cast_to_fp8(
-    x: torch.Tensor, group_size=128
-) -> Tuple[torch.Tensor, torch.Tensor]:
-    assert x.dim() == 2 and x.size(1) % group_size == 0
-    m, n = x.shape
-    x_view = x.view(m, -1, group_size)
-    x_amax = x_view.abs().float().amax(dim=2).view(m, -1).clamp(1e-4)
-    return (
-        (x_view * (FP8_E4M3_MAX / x_amax.unsqueeze(2)))
-        .to(torch.float8_e4m3fn)
-        .view(m, n),
-        (x_amax / FP8_E4M3_MAX).view(m, -1),
-    )
+# def per_token_cast_to_fp8(
+#     x: torch.Tensor, group_size=128
+# ) -> Tuple[torch.Tensor, torch.Tensor]:
+#     assert x.dim() == 2 and x.size(1) % group_size == 0
+#     m, n = x.shape
+#     x_view = x.view(m, -1, group_size)
+#     x_amax = x_view.abs().float().amax(dim=2).view(m, -1).clamp(1e-4)
+#     return (
+#         (x_view * (FP8_E4M3_MAX / x_amax.unsqueeze(2)))
+#         .to(torch.float8_e4m3fn)
+#         .view(m, n),
+#         (x_amax / FP8_E4M3_MAX).view(m, -1),
+#     )
 
 
-def per_block_cast_to_fp8(
-    x: torch.Tensor, group_size=128
-) -> Tuple[torch.Tensor, torch.Tensor]:
-    assert x.dim() == 2
-    m, n = x.shape
-    x_padded = torch.zeros(
-        (ceil_div(m, group_size) * group_size, ceil_div(n, group_size) * group_size),
-        dtype=x.dtype,
-        device=x.device,
-    )
-    x_padded[:m, :n] = x
-    x_view = x_padded.view(-1, group_size, x_padded.size(1) // group_size, group_size)
-    x_amax = x_view.abs().float().amax(dim=(1, 3), keepdim=True).clamp(1e-4)
-    x_scaled = (x_view * (FP8_E4M3_MAX / x_amax)).to(torch.float8_e4m3fn)
-    return x_scaled.view_as(x_padded)[:m, :n].contiguous(), (
-        x_amax / FP8_E4M3_MAX
-    ).view(x_view.size(0), x_view.size(2))
+# def per_block_cast_to_fp8(
+#     x: torch.Tensor, group_size=128
+# ) -> Tuple[torch.Tensor, torch.Tensor]:
+#     assert x.dim() == 2
+#     m, n = x.shape
+#     x_padded = torch.zeros(
+#         (ceil_div(m, group_size) * group_size, ceil_div(n, group_size) * group_size),
+#         dtype=x.dtype,
+#         device=x.device,
+#     )
+#     x_padded[:m, :n] = x
+#     x_view = x_padded.view(-1, group_size, x_padded.size(1) // group_size, group_size)
+#     x_amax = x_view.abs().float().amax(dim=(1, 3), keepdim=True).clamp(1e-4)
+#     x_scaled = (x_view * (FP8_E4M3_MAX / x_amax)).to(torch.float8_e4m3fn)
+#     return x_scaled.view_as(x_padded)[:m, :n].contiguous(), (
+#         x_amax / FP8_E4M3_MAX
+#     ).view(x_view.size(0), x_view.size(2))
 
 
-def construct(m: int, k: int, n: int, group_size, device) -> Tuple[
-    Tuple[torch.Tensor, torch.Tensor],
-    Tuple[torch.Tensor, torch.Tensor],
-    torch.Tensor,
-    torch.Tensor,
-]:
-    x = torch.randn((m, k), device=device, dtype=torch.bfloat16)
-    y = torch.randn((n, k), device=device, dtype=torch.bfloat16)
-    out = torch.empty((m, n), device=device, dtype=torch.bfloat16)
+# def construct(m: int, k: int, n: int, group_size, device) -> Tuple[
+#     Tuple[torch.Tensor, torch.Tensor],
+#     Tuple[torch.Tensor, torch.Tensor],
+#     torch.Tensor,
+#     torch.Tensor,
+# ]:
+#     x = torch.randn((m, k), device=device, dtype=torch.bfloat16)
+#     y = torch.randn((n, k), device=device, dtype=torch.bfloat16)
+#     out = torch.empty((m, n), device=device, dtype=torch.bfloat16)
 
-    x_fp8, y_fp8 = per_token_cast_to_fp8(x, group_size), per_block_cast_to_fp8(
-        y, group_size
-    )
-    # Transpose earlier so that the testing will not trigger transposing kernels
-    x_fp8 = (x_fp8[0], deep_gemm.get_col_major_tma_aligned_tensor(x_fp8[1]))
-    return x_fp8, y_fp8, out
+#     x_fp8, y_fp8 = per_token_cast_to_fp8(x, group_size), per_block_cast_to_fp8(
+#         y, group_size
+#     )
+#     # Transpose earlier so that the testing will not trigger transposing kernels
+#     x_fp8 = (x_fp8[0], deep_gemm.get_col_major_tma_aligned_tensor(x_fp8[1]))
+#     return x_fp8, y_fp8, out
 
 
-def construct_grouped(
-    num_groups: int, m: int, k: int, n: int, is_masked: bool, group_size, device
-) -> Tuple[
-    Tuple[torch.Tensor, torch.Tensor],
-    Tuple[torch.Tensor, torch.Tensor],
-    torch.Tensor,
-    torch.Tensor,
-]:
-    x = torch.randn((num_groups, m, k), device=device, dtype=torch.bfloat16)
-    y = torch.randn((num_groups, n, k), device=device, dtype=torch.bfloat16)
-    out = torch.empty((num_groups, m, n), device=device, dtype=torch.bfloat16)
+# def construct_grouped(
+#     num_groups: int, m: int, k: int, n: int, is_masked: bool, group_size, device
+# ) -> Tuple[
+#     Tuple[torch.Tensor, torch.Tensor],
+#     Tuple[torch.Tensor, torch.Tensor],
+#     torch.Tensor,
+#     torch.Tensor,
+# ]:
+#     x = torch.randn((num_groups, m, k), device=device, dtype=torch.bfloat16)
+#     y = torch.randn((num_groups, n, k), device=device, dtype=torch.bfloat16)
+#     out = torch.empty((num_groups, m, n), device=device, dtype=torch.bfloat16)
 
-    assert m % 4 == 0, f"TMA alignment error: {m}"
-    x_fp8 = (
-        torch.empty_like(x, dtype=torch.float8_e4m3fn),
-        torch.empty((num_groups, m, k // group_size), device=device, dtype=torch.float),
-    )
-    y_fp8 = (
-        torch.empty_like(y, dtype=torch.float8_e4m3fn),
-        torch.empty(
-            (num_groups, (n + group_size - 1) // group_size, k // group_size),
-            device=device,
-            dtype=torch.float,
-        ),
-    )
-    for i in range(num_groups):
-        x_fp8[0][i], x_fp8[1][i] = per_token_cast_to_fp8(x[i], group_size)
-        y_fp8[0][i], y_fp8[1][i] = per_block_cast_to_fp8(y[i], group_size)
+#     assert m % 4 == 0, f"TMA alignment error: {m}"
+#     x_fp8 = (
+#         torch.empty_like(x, dtype=torch.float8_e4m3fn),
+#         torch.empty((num_groups, m, k // group_size), device=device, dtype=torch.float),
+#     )
+#     y_fp8 = (
+#         torch.empty_like(y, dtype=torch.float8_e4m3fn),
+#         torch.empty(
+#             (num_groups, (n + group_size - 1) // group_size, k // group_size),
+#             device=device,
+#             dtype=torch.float,
+#         ),
+#     )
+#     for i in range(num_groups):
+#         x_fp8[0][i], x_fp8[1][i] = per_token_cast_to_fp8(x[i], group_size)
+#         y_fp8[0][i], y_fp8[1][i] = per_block_cast_to_fp8(y[i], group_size)
 
-    # For non-masked input, we must merge the group and M dims
-    if not is_masked:
-        x_fp8 = (
-            x_fp8[0].view(-1, k),
-            per_token_cast_to_fp8(x.view(-1, k), group_size)[1],
-        )
-        out = out.view(-1, n)
+#     # For non-masked input, we must merge the group and M dims
+#     if not is_masked:
+#         x_fp8 = (
+#             x_fp8[0].view(-1, k),
+#             per_token_cast_to_fp8(x.view(-1, k), group_size)[1],
+#         )
+#         out = out.view(-1, n)
 
-    # Transpose earlier so that the testing will not trigger transposing kernels
-    x_fp8 = (x_fp8[0], get_col_major_tma_aligned_tensor(x_fp8[1]))
-    return x_fp8, y_fp8, out
+#     # Transpose earlier so that the testing will not trigger transposing kernels
+#     x_fp8 = (x_fp8[0], get_col_major_tma_aligned_tensor(x_fp8[1]))
+#     return x_fp8, y_fp8, out
 
 
 class GPUGemmFP8Op(GemmFP8Op):
@@ -169,7 +169,6 @@ class GPUGemmFP8Op(GemmFP8Op):
     #     t = bench_kineto(test_func, "fp8_gemm", suppress_kineto_output=True)
     #     return t * 1e6 # us
 
-    # def test_scaled_mm_with_cast(self,input_data, dtype, out_dtype):
     def test_scaled_mm_with_cast(self):
         """
         c = a @ b -> c8 = a8 @ b8
@@ -180,7 +179,7 @@ class GPUGemmFP8Op(GemmFP8Op):
         n = self.N
         device = self.backend.get_torch_device_name()
         mat1 = torch.randn((m, k), dtype=torch.float32)
-        mat2 = torch.randn((n, k), dtype=torch.float32)
+        mat2 = torch.randn((k, n), dtype=torch.float32)
         # out = torch.empty((m, n), dtype=torch.float32)
 
         fp8max = FP8_E4M3_MAX
@@ -196,14 +195,20 @@ class GPUGemmFP8Op(GemmFP8Op):
         # out_dtype scaled_mm result
         scale_out = golden.abs().max() / fp8max
 
+        f8_a_gpu = f8_a.to(device)
+        f8_b_gpu = f8_b.to(device)
+        scale_a_gpu = scale_a.to(device)
+        scale_b_gpu = scale_b.to(device)
+        scale_out_gpu = scale_out.to(device)
+
         self.backend.device_synchronize()
         # warm up
         musa_out, amax = torch._scaled_mm(
-            f8_a.musa(),
-            f8_b.musa(),
-            scale_a=scale_a,
-            scale_b=scale_b,
-            scale_result=scale_out,
+            f8_a_gpu,
+            f8_b_gpu,
+            scale_a=scale_a_gpu,
+            scale_b=scale_b_gpu,
+            scale_result=scale_out_gpu,
             out_dtype=torch.float8_e4m3fn,
         )
 
@@ -211,11 +216,11 @@ class GPUGemmFP8Op(GemmFP8Op):
         start_time = time.perf_counter()
         for _ in range(ITERS):
             musa_out, amax = torch._scaled_mm(
-                f8_a.musa(),
-                f8_b.musa(),
-                scale_a=scale_a,
-                scale_b=scale_b,
-                scale_result=scale_out,
+                f8_a_gpu,
+                f8_b_gpu,
+                scale_a=scale_a_gpu,
+                scale_b=scale_b_gpu,
+                scale_result=scale_out_gpu,
                 out_dtype=torch.float8_e4m3fn,
             )
         self.backend.device_synchronize()
