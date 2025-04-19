@@ -180,7 +180,6 @@ class GPUGemmFP8Op(GemmFP8Op):
         device = self.backend.get_torch_device_name()
         mat1 = torch.randn((m, k), dtype=torch.float32)
         mat2 = torch.randn((k, n), dtype=torch.float32)
-        # out = torch.empty((m, n), dtype=torch.float32)
 
         fp8max = FP8_E4M3_MAX
         # get f8 tensor from inputs
@@ -209,7 +208,7 @@ class GPUGemmFP8Op(GemmFP8Op):
             scale_a=scale_a_gpu,
             scale_b=scale_b_gpu,
             scale_result=scale_out_gpu,
-            out_dtype=torch.float8_e4m3fn,
+            out_dtype=torch.bfloat16,
         )
 
         self.backend.device_synchronize()
@@ -221,7 +220,7 @@ class GPUGemmFP8Op(GemmFP8Op):
                 scale_a=scale_a_gpu,
                 scale_b=scale_b_gpu,
                 scale_result=scale_out_gpu,
-                out_dtype=torch.float8_e4m3fn,
+                out_dtype=torch.bfloat16,
             )
         self.backend.device_synchronize()
         end_time = time.perf_counter()

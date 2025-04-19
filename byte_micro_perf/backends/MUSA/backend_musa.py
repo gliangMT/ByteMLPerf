@@ -71,7 +71,7 @@ OP_MAPPING = {
     "all_gather": AllGatherOp,
     "all_reduce": AllReduceOp,
     "all_to_all": AlltoAllOp,
-    # "broadcast": BroadcastOp,
+    "broadcast": BroadcastOp,
     "reduce_scatter": ReduceScatterOp,
     "p2p": P2POp,
     # h2d ops
