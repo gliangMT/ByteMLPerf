@@ -173,6 +173,7 @@ class GPUGroupGemmFP8Op(GroupGemmFP8Op):
             B_fp8.append(b_quantizers[i](B[i]))
 
         # warm up
+        self.backend.device_synchronize()
         general_grouped_gemm(
             A_fp8,
             B_fp8,
@@ -183,6 +184,7 @@ class GPUGroupGemmFP8Op(GroupGemmFP8Op):
             accumulate=accumulate,
         )
 
+        self.backend.device_synchronize()
         start_time = time.perf_counter()
         for _ in range(ITERS):
             general_grouped_gemm(
@@ -195,7 +197,7 @@ class GPUGroupGemmFP8Op(GroupGemmFP8Op):
                 accumulate=accumulate,
             )
         end_time = time.perf_counter()
-
+        self.backend.device_synchronize()
         exec_time = end_time - start_time
 
         tflops = 2 * m * k * n * z / (exec_time * 1e12)
