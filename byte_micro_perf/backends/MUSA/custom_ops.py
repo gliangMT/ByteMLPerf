@@ -10,6 +10,7 @@ from typing import List, Dict, Union, Tuple
 FILE_DIR = pathlib.Path(__file__).parent.absolute()
 MICRO_PERF_DIR = FILE_DIR.parent.parent
 
+WARM_ITERS = 10
 ITERS = 1000
 
 sys.path.insert(0, str(MICRO_PERF_DIR))
@@ -174,15 +175,16 @@ class GPUGroupGemmFP8Op(GroupGemmFP8Op):
 
         # warm up
         self.backend.device_synchronize()
-        general_grouped_gemm(
-            A_fp8,
-            B_fp8,
-            out,
-            dtype,
-            get_multi_stream_cublas_workspace(),
-            m_splits=[k] * m_splits,
-            accumulate=accumulate,
-        )
+        for _ in range(WARM_ITERS):
+            general_grouped_gemm(
+                A_fp8,
+                B_fp8,
+                out,
+                dtype,
+                get_multi_stream_cublas_workspace(),
+                m_splits=[k] * m_splits,
+                accumulate=accumulate,
+            )
 
         self.backend.device_synchronize()
         start_time = time.perf_counter()
@@ -196,15 +198,11 @@ class GPUGroupGemmFP8Op(GroupGemmFP8Op):
                 m_splits=[k] * m_splits,
                 accumulate=accumulate,
             )
-        end_time = time.perf_counter()
         self.backend.device_synchronize()
+        end_time = time.perf_counter()
         exec_time = end_time - start_time
 
-        tflops = 2 * m * k * n * z / (exec_time * 1e12)
-        print(f">>>>>>>>>> actual calc flops is {tflops} ")
-
-        return (exec_time / ITERS) * 1e6  # us
-
+        return (exec_time / ITERS) * 1e6 * z  # us, need to devided by group size
     def group_gemm_fp8_run(self):
         return self.test_fp8_grouped_gemm()
 
