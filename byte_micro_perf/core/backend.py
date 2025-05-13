@@ -141,7 +141,8 @@ class Backend(ABC):
     def perf(self, op_instance, profiling=True):
         if op_instance.is_custom_run():
             latency_us = op_instance.core_run()
-            return latency_us
+            kernel_list = []
+            return latency_us, kernel_list
         
         # op
         tensor_size = op_instance.tensor_size
