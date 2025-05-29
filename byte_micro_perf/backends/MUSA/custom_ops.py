@@ -21,24 +21,6 @@ from core.op import BasicOp
 from core.ops.gemm_ops import GemmOp, GemmFP8Op, GroupGemmFP8Op
 from core.ops.attn_ops import FlashAttentionOp
 
-# group fp8 gemm
-try:
-    from transformer_engine.pytorch.cpp_extensions import general_gemm, general_grouped_gemm
-    from transformer_engine.pytorch.tensor.float8_tensor import Float8Quantizer
-    from transformer_engine.pytorch.module.base import (
-        get_multi_stream_cublas_workspace,
-        get_workspace,
-    )
-    import transformer_engine_torch as tex
-except ImportError:
-    tex = None
-    general_gemm = None
-    general_grouped_gemm = None
-    Float8Quantizer = None
-    get_multi_stream_cublas_workspace = None
-    get_workspace = None
-    logger.warning("MT-TransformerEngine is not available, please install it first.")
-
 """
 gemm ops
 """
@@ -128,6 +110,24 @@ class GPUGemmFP8Op(GemmFP8Op):
         return self.test_scaled_mm_with_cast()
 
 
+# group fp8 gemm
+try:
+    from transformer_engine.pytorch.cpp_extensions import general_gemm, general_grouped_gemm
+    from transformer_engine.pytorch.tensor.float8_tensor import Float8Quantizer
+    from transformer_engine.pytorch.module.base import (
+        get_multi_stream_cublas_workspace,
+        get_workspace,
+    )
+    import transformer_engine_torch as tex
+except ImportError:
+    tex = None
+    general_gemm = None
+    general_grouped_gemm = None
+    Float8Quantizer = None
+    get_multi_stream_cublas_workspace = None
+    get_workspace = None
+    logger.warning("MT-TransformerEngine is not available, please install it first.")
+
 class GPUGroupGemmFP8Op(GroupGemmFP8Op):
     def __init__(self, args_dict, backend, *args, **kwargs):
         super().__init__(args_dict, backend, *args, **kwargs)
@@ -139,7 +139,7 @@ class GPUGroupGemmFP8Op(GroupGemmFP8Op):
         device = self.backend.get_torch_device_name()
         # z, m, k, n = shape
         z = self.num_groups
-        m = self.M
+        m = self.M * z
         k = self.K
         n = self.N
         m_splits = m // z
@@ -211,7 +211,7 @@ class GPUGroupGemmFP8Op(GroupGemmFP8Op):
         end_time = time.perf_counter()
         exec_time = end_time - start_time
 
-        return (exec_time / ITERS) * 1e6 * z  # us, need to devided by group size
+        return (exec_time / ITERS) * 1e6
     def group_gemm_fp8_run(self):
         return self.test_fp8_grouped_gemm()
 
