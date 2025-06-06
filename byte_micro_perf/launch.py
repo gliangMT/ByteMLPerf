@@ -92,7 +92,13 @@ def parse_args():
         action="store_true", 
         help="Print all available task names"
     )
-
+    parser.add_argument(
+        "--iters",
+        type=int,
+        default=1,
+        help="The number of times to run the task (default: 1)"
+    )
+    
     # report dir
     parser.add_argument(
         "--report_dir", 
@@ -197,8 +203,10 @@ if __name__ == "__main__":
 
     test_cases.sort()
 
+    test_iter = args.iters
     logger.info(f"******************* Tasks: *****************")
     logger.info(f"{test_cases}\n")
+    logger.info(f"{test_iter}\n")
 
 
 

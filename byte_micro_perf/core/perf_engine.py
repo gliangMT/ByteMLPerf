@@ -141,7 +141,7 @@ def engine_run(rank, *args):
                 logger.error(f"{task} has not item")
                 continue
             if scheduler.prepare_task(task) is not None:
-                result_list = scheduler.run(task_cases)
+                result_list = scheduler.run(task_cases, configs.iters)
             dist.barrier()
 
             if configs.numa_rank == 0:

@@ -165,7 +165,7 @@ class Scheduler:
 
 
 
-    def run(self, test_cases):
+    def run(self, test_cases, iters=1):
         self.__clean_subprocess()
 
         instance_num = len(self.backend.target_devices)
@@ -174,7 +174,7 @@ class Scheduler:
         try:
             _subprocess = mp.spawn(
                 fn=self.subprocess_func,
-                args=(input_queues, output_queues),
+                args=(input_queues, output_queues, iters),
                 nprocs=instance_num,
                 join=False,
                 daemon=False
@@ -224,7 +224,7 @@ class Scheduler:
 
     def subprocess_func(self, instance_rank : int, *args): 
         try:
-            input_queues, output_queues = args
+            input_queues, output_queues, iters = args
             backend = self.backend
 
             # computation ops
@@ -266,10 +266,12 @@ class Scheduler:
                         latency_us = 0.
                         kernel_list = []
                         try:
-                            latency_us, kernel_list = backend.perf(
-                                op_instance, 
-                                profiling=self.profiling
-                            )
+                            for i in range(iters):
+                                # print(f">>>>>>>>>>>>>>>> iters is {i}")
+                                latency_us, kernel_list = backend.perf(
+                                    op_instance, 
+                                    profiling=self.profiling
+                                )
                         except Exception as e:
                             print(traceback.format_exc())
                         result_json["provider"] = op_instance.get_provider()
@@ -343,10 +345,12 @@ class Scheduler:
                             latency_us = 0.
                             kernel_list = []
                             try:
-                                latency_us, kernel_list = backend.perf(
-                                    op_instance, 
-                                    profiling=self.profiling
-                                )
+                                for i in range(iters):
+                                    # print(f">>>>>>>>>>>>>>>> iters is {i}")
+                                    latency_us, kernel_list = backend.perf(
+                                        op_instance, 
+                                        profiling=self.profiling
+                                    )
                             except Exception as e:
                                 print(traceback.format_exc())
                             result_list[true_rank]["provider"] = op_instance.get_provider()
