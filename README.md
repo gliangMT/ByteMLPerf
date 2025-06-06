@@ -1,3 +1,7 @@
+> * 该版本为测试 MT GPU 随机功率的工具版本，请不要直接用来测试性能，
+>  * 运行方法：进入指定容器后，再进入`ByteMLPerf/byte_micro_perf`目录下运行`python launch.py --task gemm --hardware_type MUSA --iters [指定循环次数，默认为1]`
+>  * 运行同时可以开启`watch -n 0.1 'mthreads-gmi -q|grep Draw'`命令查看实时功率
+
 <div align="center">
   <img src="docs/images/icon.png">
 </div>
